@@ -19,5 +19,10 @@ fi
 chmod +x $ROOT_DIR/install/*.sh
 
 bash $ROOT_DIR/install/install-yay.sh
+
+if [[ "$ARCH" == "aarch64" ]]; then
+  sudo pacman-key --populate archlinuxarm
+fi
+
 bash $ROOT_DIR/install/install-pacman-packages.sh
 bash $ROOT_DIR/install/install-aur-packages.sh
