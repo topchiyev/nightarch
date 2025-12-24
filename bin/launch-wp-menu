@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+TITLE="Wallpapers > "
+WALLPAPER_DIR="$HOME/.local/share/wallpapers"
+CURRENT="$WALLPAPER_DIR/current.png"
+EMPTY="$WALLPAPER_DIR/empty.png"
+
+RESTART_CMD=(restart-swaybg)
+
+mkdir -p "$WALLPAPER_DIR"
+
+need_cmd() {
+  command -v "$1" >/dev/null 2>&1 || {
+    echo "launch-wp-menu: missing dependency: $1" >&2
+    exit 1
+  }
+}
+
+need_cmd fuzzel
+need_cmd zenity
+need_cmd find
+need_cmd sort
+need_cmd cp
+need_cmd rm
+need_cmd file
+
+# --------------------------------------------------------------------
+
+list_wallpapers() {
+  find "$WALLPAPER_DIR" -maxdepth 1 -type f \
+    -iname '*.png' \
+    ! -iname 'current.png' \
+    ! -iname 'empty.png' \
+    -printf '%f\n' |
+    sort
+}
+
+strip_ext() {
+  local n="$1"
+  n="${n%.png}"
+  n="${n%.PNG}"
+  printf "%s" "$n"
+}
+
+pick_file_png() {
+  zenity --file-selection \
+    --title="Pick a PNG wallpaper" \
+    --file-filter="PNG images | *.png" \
+    2>/dev/null || true
+}
+
+unique_dest() {
+  local base="$1"
+  local name ext dest i
+
+  name="${base%.png}"
+  ext="png"
+  dest="$WALLPAPER_DIR/$name.$ext"
+
+  [[ ! -e "$dest" ]] && {
+    printf "%s" "$dest"
+    return
+  }
+
+  for i in {1..200}; do
+    dest="$WALLPAPER_DIR/$name-$i.$ext"
+    [[ ! -e "$dest" ]] && {
+      printf "%s" "$dest"
+      return
+    }
+  done
+
+  printf "%s" "$WALLPAPER_DIR/$name-$(date +%s).$ext"
+}
+
+pick_wallpaper_index() {
+  mapfile -t FILES < <(list_wallpapers)
+
+  {
+    for f in "${FILES[@]}"; do
+      full="$WALLPAPER_DIR/$f"
+      label="$(strip_ext "$f")"
+      printf '%b\n' "${label}\0icon\x1f${full}"
+    done
+
+    printf '%b\n' "󰈙 Pick custom wallpaper"
+    printf '%b\n' "󰋭 Unset wallpaper"
+  } | fuzzel --dmenu --index --prompt="$TITLE"
+}
+
+pick_action() {
+  local label="$1 > "
+  printf '%b\n' \
+    "󰗠  Set as Current" \
+    "󰩺  Delete" \
+    "Back" |
+    fuzzel --dmenu --prompt="$label"
+}
+
+# --------------------------------------------------------------------
+
+while true; do
+  mapfile -t FILES < <(list_wallpapers)
+  COUNT="${#FILES[@]}"
+
+  IDX="$(pick_wallpaper_index)" || exit 0
+  [[ -z "${IDX:-}" ]] && exit 0
+
+  # Pick custom wallpaper
+  if ((IDX == COUNT)); then
+    picked="$(pick_file_png)"
+    [[ -z "${picked:-}" ]] && continue
+
+    mime="$(file --brief --mime-type -- "$picked" || true)"
+    if [[ "$mime" != "image/png" ]]; then
+      printf "Selected file is not a PNG\n" |
+        fuzzel --dmenu --prompt="Error" >/dev/null || true
+      continue
+    fi
+
+    base="$(basename "$picked")"
+    base="${base%.*}.png" # force lowercase extension
+    dest="$(unique_dest "$base")"
+
+    cp -f -- "$picked" "$dest"
+    continue
+  fi
+
+  # Remove wallpaper
+  if ((IDX == COUNT + 1)); then
+    cp -f -- "$EMPTY" "$CURRENT"
+    "${RESTART_CMD[@]}"
+    continue
+  fi
+
+  # Normal wallpaper entry
+  file="${FILES[$IDX]}"
+  wp="$WALLPAPER_DIR/$file"
+  label="$(strip_ext "$file")"
+
+  action="$(pick_action "$label")" || continue
+  case "$action" in
+  "󰗠  Set as Current")
+    cp -f -- "$wp" "$CURRENT"
+    "${RESTART_CMD[@]}"
+    ;;
+  "󰩺  Delete")
+    rm -f -- "$wp"
+    ;;
+  *) ;;
+  esac
+done

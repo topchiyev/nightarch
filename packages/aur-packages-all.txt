@@ -1,5 +1,6 @@
 freelens-bin
 localsend-bin
 xdg-terminal-exec
+wayfreeze
 yay
 zen-browser-bin

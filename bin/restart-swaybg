@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+WALLPAPER="$HOME/.local/share/wallpapers/current.png"
+
+# Kill existing swaybg instances
+pkill -x swaybg 2>/dev/null || true
+
+# Start swaybg fully detached
+setsid swaybg -i "$WALLPAPER" -m fill >/dev/null 2>&1 &
+disown

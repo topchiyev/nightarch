@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# iface -> systemd unit
+declare -A CONNECTIONS=(
+  ["openvpn-mga"]="openvpn-client@MGA.service"
+  ["wg-k3s"]="wg-quick@wg-k3s.service"
+)
+
+pick_menu() {
+  local prompt="$1"
+  local options="$2"
+
+  if command -v rofi >/dev/null 2>&1; then
+    printf "%b" "$options" | rofi -dmenu -i -p "$prompt> "
+  elif command -v wofi >/dev/null 2>&1; then
+    printf "%b" "$options" | wofi --dmenu -i -p "$prompt> "
+  elif command -v fuzzel >/dev/null 2>&1; then
+    printf "%b" "$options" | fuzzel --dmenu --prompt "$prompt> "
+  else
+    return 1
+  fi
+}
+
+is_up() {
+  ip link show "$1" >/dev/null 2>&1
+}
+
+get_active_connection() {
+  local int
+  for int in "${!CONNECTIONS[@]}"; do
+    if is_up "$int"; then
+      echo "$int"
+      return
+    fi
+  done
+  echo "none"
+}
+
+json_out() {
+  local connection="$1"
+  if [[ "$connection" == "none" ]]; then
+    printf '{"text":"","tooltip":"Disconnected","class":"disconnected"}\n'
+  else
+    # double quotes so $connection expands
+    printf '{"text":"","tooltip":"Connected: %s","class":"connected"}\n' "$connection"
+  fi
+}
+
+do_disconnect() {
+  local active_connection
+  active_connection="$(get_active_connection)"
+
+  if [[ "$active_connection" == "none" ]]; then
+    return 0
+  fi
+
+  sudo systemctl stop "${CONNECTIONS[$active_connection]}" >/dev/null 2>&1 || true
+}
+
+do_connect() {
+  local selected_connection="$1"
+
+  # enforce "only one at once"
+  do_disconnect
+
+  sudo systemctl start "${CONNECTIONS[$selected_connection]}"
+}
+
+do_menu() {
+  local active_connection choice_str choice
+
+  active_connection="$(get_active_connection)"
+
+  if [[ "$active_connection" != "none" ]]; then
+    choice_str=$'Disconnect\n'
+  else
+    choice_str=""
+    for int in "${!CONNECTIONS[@]}"; do
+      choice_str+="$int"$'\n'
+    done
+  fi
+
+  choice="$(pick_menu "VPN" "$choice_str")" || exit 0
+  [[ -z "$choice" ]] && exit 0
+
+  if [[ "$choice" == "Disconnect" ]]; then
+    do_disconnect
+  else
+    # guard against selecting something unknown
+    if [[ -n "${CONNECTIONS[$choice]:-}" ]]; then
+      do_connect "$choice"
+    fi
+  fi
+}
+
+case "${1:-}" in
+status | "")
+  json_out "$(get_active_connection)"
+  ;;
+menu)
+  do_menu
+  ;;
+*)
+  echo "Usage: $0 [status|menu]" >&2
+  exit 1
+  ;;
+esac

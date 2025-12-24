@@ -1,0 +1,86 @@
+#!/bin/bash
+
+pick_menu() {
+  local prompt="$1"
+  local options="$2"
+
+  if command -v rofi >/dev/null 2>&1; then
+    printf "%b" "$options" | rofi -dmenu -i -p "$prompt > "
+  elif command -v wofi >/dev/null 2>&1; then
+    printf "%b" "$options" | wofi --dmenu -i -p "$prompt > "
+  elif command -v fuzzel >/dev/null 2>&1; then
+    printf "%b" "$options" | fuzzel --dmenu --prompt "$prompt > "
+  else
+    return 1
+  fi
+}
+
+do_app_menu() {
+  fuzzel --prompt "Apps > "
+}
+
+do_settings_menu() {
+  local choice
+
+  choice="$(pick_menu "Settings" "󰀻  Apps\n󱚾  Wi-Fi\n󰂯  Bluetooth\n  Audio\n󰋩  Wallpaper\n  Time zone")" || do_main_menu
+  [[ -z "$choice" ]] && do_main_menu
+
+  if [[ $choice == "󰀻  Apps" ]]; then
+    app-management
+  elif [[ "$choice" == "󱚾  Wi-Fi" ]]; then
+    launch-wifi
+  elif [[ "$choice" == "󰂯  Bluetooth" ]]; then
+    launch-bluetooth
+  elif [[ "$choice" == "  Audio" ]]; then
+    launch-audio
+  elif [[ "$choice" == "󰋩  Wallpaper" ]]; then
+    launch-wp-menu
+  elif [[ "$choice" == "  Time zone" ]]; then
+    launch-tz-menu
+  else
+    do_main_menu
+  fi
+}
+
+do_system_menu() {
+  local choice
+
+  choice="$(pick_menu "System" "  Reboot\n󰐥  Shutdown")" || do_main_menu
+  [[ -z "$choice" ]] && do_main_menu
+
+  if [[ "$choice" == "  Reboot" ]]; then
+    cmd-reboot
+  elif [[ "$choice" == "󰐥  Shutdown" ]]; then
+    cmd-shutdown
+  else
+    do_main_menu
+  fi
+}
+
+do_main_menu() {
+  local choice
+
+  choice="$(pick_menu "Go" "󰀻  Apps\n  Settings\n󰋼  About\n  System")" || exit 0
+  [[ -z "$choice" ]] && exit 0
+
+  if [[ "$choice" == "󰀻  Apps" ]]; then
+    do_app_menu
+  elif [[ "$choice" == "  Settings" ]]; then
+    do_settings_menu
+  elif [[ "$choice" == "󰋼  About" ]]; then
+    launch-about
+  elif [[ "$choice" == "  System" ]]; then
+    do_system_menu
+  fi
+}
+
+if [[ -n "$1" ]]; then
+  case "${1,,}" in
+  *apps*) do_app_menu ;;
+  *settings*) do_setings_menu ;;
+  *about*) launch-about ;;
+  *system*) do_system_menu ;;
+  esac
+else
+  do_main_menu
+fi

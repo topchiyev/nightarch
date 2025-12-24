@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ADDR="0.0.0.0"
+PORT="5900"
+RES="1920x1080@60"
+PREFIX="HEADLESS"
+
+RUNDIR="/run/user/$(id -u)"
+PIDFILE="${RUNDIR}/vncctl.wayvnc.pid"
+LOGFILE="${RUNDIR}/vncctl.wayvnc.log"
+
+die() {
+  echo "vncctl: $*" >&2
+  exit 1
+}
+need() { command -v "$1" >/dev/null 2>&1 || die "missing dependency: $1"; }
+
+need hyprctl
+need wayvnc
+need sed
+need grep
+need head
+
+load_env() {
+  local env_out
+  env_out="$(systemctl --user show-environment 2>/dev/null || true)"
+
+  get_env() {
+    local key="$1"
+    printf '%s\n' "$env_out" | sed -n "s/^${key}=//p" | tail -n 1
+  }
+
+  local XDG_RUNTIME_DIR_VAL WAYLAND_DISPLAY_VAL HYPR_SIG_VAL
+  XDG_RUNTIME_DIR_VAL="$(get_env XDG_RUNTIME_DIR)"
+  WAYLAND_DISPLAY_VAL="$(get_env WAYLAND_DISPLAY)"
+  HYPR_SIG_VAL="$(get_env HYPRLAND_INSTANCE_SIGNATURE)"
+
+  # Sensible fallback for runtime dir (SSH often has none)
+  if [[ -z "$XDG_RUNTIME_DIR_VAL" ]]; then
+    XDG_RUNTIME_DIR_VAL="$RUNDIR"
+  fi
+
+  # Hyprland signature fallback (very common and reliable)
+  if [[ -z "$HYPR_SIG_VAL" && -d /tmp/hypr ]]; then
+    HYPR_SIG_VAL="$(ls -1 /tmp/hypr 2>/dev/null | head -n 1 || true)"
+  fi
+
+  # Export what we have
+  export XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR_VAL"
+  if [[ -n "$WAYLAND_DISPLAY_VAL" ]]; then export WAYLAND_DISPLAY="$WAYLAND_DISPLAY_VAL"; fi
+  if [[ -n "$HYPR_SIG_VAL" ]]; then export HYPRLAND_INSTANCE_SIGNATURE="$HYPR_SIG_VAL"; fi
+
+  if [[ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+    die "HYPRLAND_INSTANCE_SIGNATURE not found. Is Hyprland running for this user? Check: ls -l /tmp/hypr"
+  fi
+
+  # NOTE: WAYLAND_DISPLAY is often not required for hyprctl itself (signature is key),
+  # but wayvnc will need a valid Wayland connection. If your setup doesn't store
+  # WAYLAND_DISPLAY in systemd env, we can add one more fallback later.
+}
+
+mon_json() { hyprctl -j monitors 2>/dev/null || true; }
+
+pick_headless() {
+  mon_json | jq -r '.[].name' | grep "^${PREFIX}" | head -n 1
+}
+
+ensure_headless() {
+  local mon
+  mon="$(pick_headless || true)"
+  if [[ -n "$mon" ]]; then
+    echo "$mon"
+    return 0
+  fi
+
+  # Create headless monitor (Hyprland will usually create HEADLESS-1/2/...)
+  hyprctl output create headless >/dev/null 2>&1 || true
+
+  mon="$(pick_headless || true)"
+  [[ -n "$mon" ]] || die "could not create/find headless monitor"
+  echo "$mon"
+}
+
+kill_headless() {
+  local mon
+  mon="$(pick_headless || true)"
+  if [[ -n "$mon" ]]; then
+    hyprctl output remove "$mon"
+  fi
+}
+
+is_running() {
+  [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null
+}
+
+cmd_start() {
+  load_env
+  local mon
+  mon="$(ensure_headless)"
+
+  if is_running; then
+    echo "vncctl: already running (pid $(cat "$PIDFILE")) on $mon"
+    exit 0
+  fi
+
+  echo "vncctl: starting wayvnc on $mon at ${ADDR}:${PORT}"
+  echo "vncctl: log: $LOGFILE"
+
+  (
+    nohup wayvnc -o "$mon" -g -R "$ADDR" "$PORT" >"$LOGFILE" 2>&1 &
+    echo $! >"$PIDFILE"
+  )
+  sleep 0.2
+
+  if is_running; then
+    echo "vncctl: started (pid $(cat "$PIDFILE"))"
+  else
+    echo "vncctl: failed to start. Last log lines:"
+    tail -n 120 "$LOGFILE" || true
+    exit 1
+  fi
+}
+
+cmd_stop() {
+  load_env
+  if is_running; then
+    local pid
+    pid="$(cat "$PIDFILE")"
+    echo "vncctl: stopping wayvnc pid $pid"
+    kill "$pid" || true
+    rm -f "$PIDFILE"
+    kill_headless
+  else
+    echo "vncctl: not running"
+  fi
+}
+
+cmd_status() {
+  # best-effort env load so status shows something useful
+  load_env || true
+
+  echo "XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-<unset>}"
+  echo "WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-<unset>}"
+  echo "HYPRLAND_INSTANCE_SIGNATURE=${HYPRLAND_INSTANCE_SIGNATURE:-<unset>}"
+  echo
+
+  if is_running; then
+    echo "wayvnc: running (pid $(cat "$PIDFILE"))"
+  else
+    echo "wayvnc: not running"
+  fi
+
+  local mon=""
+  mon="$(pick_headless || true)"
+  if [[ -n "$mon" ]]; then
+    echo "headless monitor: $mon"
+  else
+    echo "headless monitor: not found"
+  fi
+}
+
+case "${1:-}" in
+start) cmd_start ;;
+stop) cmd_stop ;;
+status) cmd_status ;;
+*)
+  echo "Usage: vncctl {start|stop|status}"
+  exit 1
+  ;;
+esac

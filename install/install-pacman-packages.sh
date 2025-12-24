@@ -7,6 +7,6 @@ if [[ "$ARCH" == "aarch64" ]]; then
   if [[ "$IS_RPI" ]]; then
     sudo pacman -S --needed - <$ROOT_DIR/packages/pacman-packages-rpi5.txt
   fi
-elif [[ "$ARCH" == "x86_64"]]; then
+elif [[ "$ARCH" == "x86_64" ]]; then
   sudo pacman -S --needed - <$ROOT_DIR/packages/pacman-packages-amd64.txt
 fi

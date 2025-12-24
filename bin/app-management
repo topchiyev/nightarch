@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+TITLE="App Management"
+SYS="/usr/share/applications"
+USR="$HOME/.local/share/applications"
+
+mkdir -p "$USR"
+
+# ---- helpers --------------------------------------------------------------
+
+desktop_path() {
+  local id="$1"
+  [[ -f "$USR/$id" ]] && echo "$USR/$id" && return
+  [[ -f "$SYS/$id" ]] && echo "$SYS/$id" && return
+  return 1
+}
+
+get_key() {
+  awk -F= -v k="$2" '$1==k {sub(/^.*=/,""); print; exit}' "$1"
+}
+
+is_hidden() {
+  local v
+  v="$(get_key "$1" "NoDisplay" || true)"
+  [[ "${v,,}" == "true" ]]
+}
+
+ensure_user_copy() {
+  local id="$1"
+  [[ -f "$USR/$id" ]] || cp "$SYS/$id" "$USR/$id"
+  echo "$USR/$id"
+}
+
+set_nodisplay() {
+  local file="$1" value="$2"
+  if grep -q '^NoDisplay=' "$file"; then
+    sed -i "s/^NoDisplay=.*/NoDisplay=$value/" "$file"
+  else
+    sed -i "1a NoDisplay=$value" "$file"
+  fi
+}
+
+# ---- app list -------------------------------------------------------------
+
+mapfile -t APPS < <(
+  ls "$SYS"/*.desktop "$USR"/*.desktop 2>/dev/null |
+    xargs -n1 basename |
+    sort -u
+)
+
+while true; do
+  MENU=()
+
+  for id in "${APPS[@]}"; do
+    path="$(desktop_path "$id" || true)"
+    [[ -z "$path" ]] && continue
+
+    name="$(get_key "$path" Name || echo "$id")"
+    icon="$(get_key "$path" Icon || echo "application-x-executable")"
+
+    if is_hidden "$path"; then
+      MENU+=("$name (hidden)\0icon\x1f$icon")
+    else
+      MENU+=("$name\0icon\x1f$icon")
+    fi
+  done
+
+  IDX="$(
+    printf '%b\n' "${MENU[@]}" |
+      fuzzel --dmenu --index --prompt="$TITLE: "
+  )" || exit 0 # Esc → quit
+
+  ID="${APPS[$IDX]}"
+  DESK_PATH="$(desktop_path "$ID")"
+
+  NAME="$(get_key "$DESK_PATH" Name || echo "$ID")"
+  ICON="$(get_key "$DESK_PATH" Icon || echo "application-x-executable")"
+
+  if is_hidden "$DESK_PATH"; then
+    ACTION="Show in app list"
+  else
+    ACTION="Hide from app list"
+  fi
+
+  CHOICE="$(
+    printf '%b\n' \
+      "$ACTION\0icon\x1fview-refresh" \
+      "Back\0icon\x1fgo-previous" |
+      fuzzel --dmenu --prompt="$NAME "
+  )" || continue # Esc → back to list
+
+  case "$CHOICE" in
+  "$ACTION"*)
+    FILE="$(ensure_user_copy "$ID")"
+    if [[ "$ACTION" == "Hide from app list" ]]; then
+      set_nodisplay "$FILE" true
+    else
+      set_nodisplay "$FILE" false
+    fi
+    ;;
+  *) ;;
+  esac
+done

@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Run a command with Hyprland session env vars (best-effort) so it works from SSH.
+# Usage:
+#   hypr-run hyprctl monitors
+#   hypr-run hyprctl output create headless
+
+env_out="$(systemctl --user show-environment 2>/dev/null || true)"
+
+get_env() {
+  local key="$1"
+  printf '%s\n' "$env_out" | sed -n "s/^${key}=//p" | tail -n 1
+}
+
+XDG_RUNTIME_DIR_VAL="$(get_env XDG_RUNTIME_DIR)"
+WAYLAND_DISPLAY_VAL="$(get_env WAYLAND_DISPLAY)"
+HYPR_SIG_VAL="$(get_env HYPRLAND_INSTANCE_SIGNATURE)"
+
+# Fallback: detect Hyprland instance signature from /tmp/hypr/
+if [[ -z "${HYPR_SIG_VAL}" && -d /tmp/hypr ]]; then
+  HYPR_SIG_VAL="$(ls -1 /tmp/hypr 2>/dev/null | head -n 1 || true)"
+fi
+
+# Export what we have (hyprctl mostly cares about HYPRLAND_INSTANCE_SIGNATURE)
+if [[ -n "${XDG_RUNTIME_DIR_VAL}" ]]; then export XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR_VAL"; fi
+if [[ -n "${WAYLAND_DISPLAY_VAL}" ]]; then export WAYLAND_DISPLAY="$WAYLAND_DISPLAY_VAL"; fi
+if [[ -n "${HYPR_SIG_VAL}" ]]; then export HYPRLAND_INSTANCE_SIGNATURE="$HYPR_SIG_VAL"; fi
+
+if [[ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+  echo "hypr-run: HYPRLAND_INSTANCE_SIGNATURE not found." >&2
+  echo "hypr-run: is Hyprland running for this user? Check: ls -l /tmp/hypr" >&2
+  exit 1
+fi
+
+exec "$@"

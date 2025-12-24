@@ -1,0 +1,5 @@
+#!/bin/bash
+
+hyprland-close-all-windows
+sleep 1 # Allow apps like Chrome to shutdown correctly
+sudo poweroff
