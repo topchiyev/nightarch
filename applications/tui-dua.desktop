@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Name=TUI Disk Management
+Comment=DUA Disk Management
+Exec=xdg-terminal-exec --app-id=tui.lazydocker -e dua i
+Terminal=false
+Type=Application
+Icon=/home/topchiyev/.local/share/applications/icons/tui-dua.png
+StartupNotify=true
+

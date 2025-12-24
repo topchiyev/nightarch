@@ -1,0 +1,35 @@
+[Desktop Entry]
+Version=1.0
+Name=TUI Kubernetes K9S
+Comment=Kubernetes Management
+Exec=xdg-terminal-exec --app-id=tui.k9s -e k9s
+Terminal=false
+Type=Application
+Icon=/home/topchiyev/.local/share/applications/icons/tui-k9s.png
+StartupNotify=true
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

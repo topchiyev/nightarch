@@ -53,6 +53,7 @@ ripgrep
 slurp
 starship
 sudo
+kubectl
 sushi
 swaybg
 swayosd

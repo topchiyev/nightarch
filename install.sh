@@ -10,6 +10,12 @@ if [[ -f /proc/device-tree/model ]] &&
 fi
 export IS_RPI
 
+if ! command -v sudo >/dev/null 2>&1; then
+  echo "NightArch requres sudo to be installed."
+  echo "Please install it, reboot and start over."
+  exit 1
+fi
+
 # Must be passwordless sudoer
 if ! sudo -n true 2>/dev/null; then
   echo "NightArch requires passwordless sudo"
@@ -18,11 +24,13 @@ fi
 
 chmod +x $ROOT_DIR/install/*.sh
 
-bash $ROOT_DIR/install/install-yay.sh
-
 if [[ "$ARCH" == "aarch64" ]]; then
   sudo pacman-key --populate archlinuxarm
 fi
+
+bash $ROOT_DIR/install/install-yay.sh
+
+sudo pacman -Syu --noconfirm
 
 bash $ROOT_DIR/install/install-pacman-packages.sh
 bash $ROOT_DIR/install/install-aur-packages.sh
