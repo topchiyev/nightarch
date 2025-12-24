@@ -1,0 +1,5 @@
+freelens-bin
+localsend-bin
+xdg-terminal-exec
+yay
+zen-browser-bin
