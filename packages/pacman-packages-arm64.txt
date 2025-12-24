@@ -1,5 +1,1 @@
 archlinuxarm-keyring
-firmware-raspberrypi
-linux-rpi
-linux-rpi-headers
-raspberrypi-bootloader
