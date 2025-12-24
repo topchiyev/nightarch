@@ -1,12 +1,12 @@
 #!/bin/bash
 
-sudo pacman -S --needed - <../packages/pacman-packages-all.txt
+sudo pacman -S --needed - <$ROOT_DIR/packages/pacman-packages-all.txt
 
 if [[ "$ARCH" == "aarch64" ]]; then
-  sudo pacman -S --needed - <../packages/pacman-packages-arm64.txt
+  sudo pacman -S --needed - <$ROOT_DIR/packages/pacman-packages-arm64.txt
   if [[ IS_RPI ]]; then
-    sudo pacman -S --needed - <../packages/pacman-packages-rpi5.txt
+    sudo pacman -S --needed - <$ROOT_DIR/packages/pacman-packages-rpi5.txt
   fi
 else if [[ "$ARCH" == "x86_64"]]; then
-  sudo pacman -S --needed - <../packages/pacman-packages-amd64.txt
+  sudo pacman -S --needed - <$ROOT_DIR/packages/pacman-packages-amd64.txt
 fi
