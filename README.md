@@ -12,25 +12,24 @@ The `NightArch` installer expects the **sudo** package to be installed and the c
 
 ## Installation
 
-To bootstrap NightArch on a fresh Arch installation, run the installer script:
+To bootstrap `NightArch` on a fresh Arch installation, run the installer script:
 
+```
 curl -fsSL https://raw.githubusercontent.com/topchiyev/nightarch/main/install.sh | bash
-
+```
 
 Alternatively, clone the repository and run the installer locally:
 
 ```
-```
 git clone https://github.com/topchiyev/nightarch.git
 cd nightarch
 ./install.sh
-```
 ```
 
 ## How it works
 
 The NightArch repository is structured with package lists (pacman and AUR), configuration files, scripts, and service definitions. The installer performs a full system update, installs your curated packages with pacman and an AUR helper (such as yay), copies your config files into place, enables services, and installs any scripts under ~/bin. This allows you to reproduce your preferred setup on any machine running Arch.
 
-Contributing
+## Contributing
 
 Feel free to fork or clone NightArch and adapt it to your needs. Contributions are welcome via pull requests.
