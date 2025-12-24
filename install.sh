@@ -11,7 +11,7 @@ fi
 export IS_RPI
 
 # Must be passwordless sudoer
-if sudo -n true 2>/dev/null; then
+if ! sudo -n true 2>/dev/null; then
   echo "NightArch requires passwordless sudo"
   exit 1
 fi
