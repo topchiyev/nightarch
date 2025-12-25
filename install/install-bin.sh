@@ -20,7 +20,7 @@ src_files=("$ROOT_DIR/bin/"*)
 
 for src_file in "${src_files[@]}"; do
   file_name="$(basename "$src_file")"
-  dest_file="$ROOT_DIR/bin/$file_name"
+  dest_file="$HOME/.local/share/bin/$file_name"
   cp -f "$src_file" "$dest_file"
   chmod +x "$dest_file"
 done
