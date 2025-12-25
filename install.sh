@@ -31,7 +31,7 @@ fi
 sudo pacman -Syu --noconfirm
 
 bash $ROOT_DIR/install/install-yay.sh
-# bash $ROOT_DIR/install/pre-install.sh
+bash $ROOT_DIR/install/pre-install.sh
 # bash $ROOT_DIR/install/install-pacman-packages.sh
 # bash $ROOT_DIR/install/install-aur-packages.sh
 # bash $ROOT_DIR/install/install-config.sh
