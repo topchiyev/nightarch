@@ -1,3 +1,0 @@
-#!/bin/bash
-
-exec launch-or-focus-tui tz-select

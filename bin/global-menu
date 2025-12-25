@@ -36,7 +36,7 @@ do_settings_menu() {
   elif [[ "$choice" == "󰋩  Wallpaper" ]]; then
     launch-wp-menu
   elif [[ "$choice" == "  Time zone" ]]; then
-    launch-tz-menu
+    tz-select
   else
     do_main_menu
   fi
