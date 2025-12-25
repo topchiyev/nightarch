@@ -8,6 +8,12 @@ sudo pacman -S --needed --noconfirm curl unzip
 
 tmp_dir="$HOME/nightarch"
 
+if [[ -d "$tmp_dir" ]]; then
+  rm -rf "$tmp_dir"
+fi
+
+mkdir -p "$tmp_dir"
+
 zipfile="$tmp_dir/nightarch.zip"
 
 curl -fL "https://github.com/topchiyev/nightarch/archive/refs/heads/main.zip" -o "$zipfile"
