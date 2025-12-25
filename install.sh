@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 export ROOT_DIR=$(dirname "$(realpath "$0")")
 export ARCH="$(uname -m)"
@@ -32,9 +33,10 @@ sudo pacman -Syu --noconfirm
 
 bash $ROOT_DIR/install/install-yay.sh
 bash $ROOT_DIR/install/pre-install.sh
-# bash $ROOT_DIR/install/install-pacman-packages.sh
-# bash $ROOT_DIR/install/install-aur-packages.sh
-# bash $ROOT_DIR/install/install-config.sh
-# bash $ROOT_DIR/install/install-wallpapers.sh
-# bash $ROOT_DIR/install/install-bin.sh
-# bash $ROOT_DIR/install/post-install.sh
+bash $ROOT_DIR/install/install-pacman-packages.sh
+bash $ROOT_DIR/install/install-aur-packages.sh
+bash $ROOT_DIR/install/install-config.sh
+bash $ROOT_DIR/install/install-wallpapers.sh
+bash $ROOT_DIR/install/install-bin.sh
+bash $ROOT_DIR/install/install-shconfig.sh
+bash $ROOT_DIR/install/post-install.sh

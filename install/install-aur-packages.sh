@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 yay -S --needed --noconfirm - <$ROOT_DIR/packages/aur-packages-all.txt
 

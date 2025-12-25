@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 if [[ ! -d $HOME/.config ]]; then
   mkdir -p $HOME/.config

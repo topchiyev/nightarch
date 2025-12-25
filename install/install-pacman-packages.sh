@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 sudo pacman -S --needed --noconfirm - <$ROOT_DIR/packages/pacman-packages-all.txt
 
