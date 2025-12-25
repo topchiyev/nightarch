@@ -28,6 +28,7 @@ impala
 imv
 inkscape
 iptables-nft
+nftables
 jq
 k9s
 lazydocker
@@ -58,6 +59,7 @@ sushi
 swaybg
 swayosd
 ttf-jetbrains-mono-nerd
+ttf-liberation
 unzip
 uwsm
 vi
@@ -78,3 +80,5 @@ zenity
 zip
 rust
 satty
+pipewire-jack
+systemd-resolvconf
