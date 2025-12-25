@@ -46,3 +46,7 @@ fi
 # Blutooth
 
 sudo systemctl enable --now bluetooth
+
+# Desktop dirs
+
+xdg-user-dirs-update --force
