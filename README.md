@@ -15,9 +15,9 @@ The `NightArch` installer expects the **sudo** package to be installed and the c
 To bootstrap `NightArch` on a fresh Arch installation, run the installer script:
 
 ```
-```
+
 curl -fsSL https://raw.githubusercontent.com/topchiyev/nightarch/main/webinstall.sh | bash
-```
+
 ```
 
 Alternatively, clone the repository and run the installer locally:
