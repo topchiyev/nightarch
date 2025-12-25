@@ -8,6 +8,8 @@ trap 'status=$?; if [ $status -eq 0 ]; then
         echo "--- Failed post-install tasks ---"
       fi' EXIT
 
+# Network
+
 # If NetworkManager was removed, enable the built‑in systemd networking stack
 if ! pacman -Qi networkmanager >/dev/null 2>&1; then
   # Optional: create a generic DHCP config for wired interfaces if none exist
@@ -26,6 +28,9 @@ EOF
   sudo systemctl enable --now systemd-networkd
   sudo systemctl enable --now systemd-resolved
 fi
+
+# Autologin
+
 if [ ! -f "/etc/systemd/system/getty@tty1.service.d/autologin.conf" ]; then
   sudo mkdir -p "/etc/systemd/system/getty@tty1.service.d"
   sudo tee /etc/systemd/system/getty@tty1.service.d/autologin.conf >/dev/null <<EOF
@@ -34,4 +39,10 @@ ExecStart=
 ExecStart=-/sbin/agetty --noreset --noclear --autologin $USER %I \$TERM
 EOF
 
+  sudo systemctl daemon-reload
+  sudo systemctl restart getty@tty1.service
 fi
+
+# Blutooth
+
+sudo systemctl enable --now bluetooth
