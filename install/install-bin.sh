@@ -7,4 +7,6 @@ fi
 
 cp -r $ROOT_DIR/bin/* $HOME/.local/share/bin/
 
-chmod +x $HOME/.local/share/bin/*.sh
+for sh_file in "$HOME/.local/share/bin"/*.sh; do
+  [[ -f "$sh_file" ]] && chmod +x "$sh_file"
+done
