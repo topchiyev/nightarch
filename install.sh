@@ -54,7 +54,12 @@ if ! sudo -n true 2>/dev/null; then
 fi
 
 echo
-read -rp "Type 'YES' to start NightArch installation: " CONFIRM
+
+if ! read -r -p "Type 'YES' to start NightArch installation: " CONFIRM </dev/tty; then
+  echo
+  echo "ERROR: Cannot access /dev/tty for interactive confirmation."
+  exit 1
+fi
 
 if [[ "$CONFIRM" != "YES" ]]; then
   echo "Installation aborted by user."
