@@ -1,11 +1,26 @@
 #!/bin/bash
+set -euo pipefail
 
-cd $HOME
+cd "$HOME"
 
-sudo pacman -S unzip
+# Ensure required tools exist
+sudo pacman -S --needed --noconfirm curl unzip
 
-curl https://github.com/topchiyev/nightarch/archive/refs/heads/main.zip -o /tmp/nightarch.zip
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
 
-unzip /tmp/nightarch.zip -d $HOME/nightarch
+zipfile="$tmpdir/nightarch.zip"
 
-bash $HOME/nightarch/install.sh
+curl -fL "https://github.com/topchiyev/nightarch/archive/refs/heads/main.zip" -o "$zipfile"
+
+unzip -q "$zipfile" -d "$tmpdir"
+
+# GitHub zip extracts into nightarch-main/
+repo_dir="$tmpdir/nightarch-main"
+
+if [[ ! -f "$repo_dir/install.sh" ]]; then
+  echo "ERROR: install.sh not found in $repo_dir"
+  exit 1
+fi
+
+bash "$repo_dir/install.sh"
