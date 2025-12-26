@@ -5,7 +5,6 @@ base-devel
 bluetui
 bluez-utils
 btop
-chrony
 dhcpcd
 dialog
 docker
